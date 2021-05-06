@@ -273,6 +273,14 @@ impl<'c> TreeBuilder<'c> {
         let mut next_level_dirs: Vec<BId> = Vec::new();
         self.load_children(self.root_id);
         open_dirs.push_back(self.root_id);
+
+
+        let timer = std::time::Instant::now();
+        let limit = std::env::var("BrootSearchLimit")
+            .map(|limit| Some(Duration::from_millis(limit.parse().ok()?)))
+            .ok()
+            .flatten();
+
         loop {
             if !total_search && (
                 (nb_lines_ok > optimal_size)
@@ -302,6 +310,12 @@ impl<'c> TreeBuilder<'c> {
                 if next_level_dirs.is_empty() {
                     // except there's nothing deeper
                     break;
+                }
+                if let Some(limit) = limit {
+                    if timer.elapsed() > limit {
+                        // too much time has passed
+                        break;
+                    }
                 }
                 for next_level_dir_id in &next_level_dirs {
                     if dam.has_event() {
